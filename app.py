@@ -2,14 +2,18 @@ from flask import Flask, request, jsonify
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import os
-import time  # Added for timing
+import time
+from dotenv import load_dotenv  # Added for .env support
 
 app = Flask(__name__)
 
-# Hugging Face model URL and token
+# Load environment variables from .env
+load_dotenv()
+
+# Hugging Face model URL and token from .env
 MODEL_URL = "rxmha125/rxcodex_test_model_v6-test"
-HF_TOKEN = "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"  # Replace with your token
-API_KEY = "your-secret-api-key"  # Replace with your API key
+HF_TOKEN = os.getenv("HF_TOKEN")  # Loaded from .env
+API_KEY = os.getenv("API_KEY")    # Loaded from .env
 
 # Load model and tokenizer with token
 tokenizer = AutoTokenizer.from_pretrained(MODEL_URL, token=HF_TOKEN)
@@ -20,7 +24,7 @@ model.to(device)
 
 # Generate response with timing
 def generate_response(prompt):
-    start_time = time.time()  # Start timer
+    start_time = time.time()
     inputs = tokenizer(f"User: {prompt}\nBot:", return_tensors="pt").to(device)
     outputs = model.generate(
         inputs["input_ids"],
@@ -33,8 +37,8 @@ def generate_response(prompt):
     )
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
     response_text = response.replace(f"User: {prompt}\nBot:", "").strip()
-    end_time = time.time()  # End timer
-    generation_time = end_time - start_time  # Time in seconds
+    end_time = time.time()
+    generation_time = end_time - start_time
     return response_text, generation_time
 
 # API endpoint
@@ -52,7 +56,7 @@ def chat():
     response, gen_time = generate_response(prompt)
     return jsonify({
         "response": response,
-        "generation_time_seconds": round(gen_time, 2)  # Rounded to 2 decimals
+        "generation_time_seconds": round(gen_time, 2)
     })
 
 if __name__ == "__main__":
